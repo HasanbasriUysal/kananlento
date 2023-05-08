@@ -1,9 +1,20 @@
+import enum
+
 import pygame
+
+from text_render import render_centered_text_lines
 
 DEFAULT_COLOR = (0, 0, 128)
 DEFAULT_SELECT_COLOR = (90, 90, 255)
 DEFAULT_FONT_FILE = "fonts/SyneMono-Regular.ttf"
 DEFAULT_FONT_SIZE = 48
+
+
+class MenuAction(enum.Enum):
+    NEW_GAME = enum.auto()
+    HIGHSCORES = enum.auto()
+    ABOUT = enum.auto()
+    QUIT = enum.auto()
 
 
 class Menu:
@@ -38,26 +49,30 @@ class Menu:
     def get_selected_item(self):
         return self.items[self.selected_idx]
 
+    def handle_event(self, event) -> MenuAction | None:
+        if event.type != pygame.KEYUP:
+            return None
+
+        if event.key == pygame.K_UP:
+            self.select_previous_item()
+        elif event.key == pygame.K_DOWN:
+            self.select_next_item()
+        elif event.key == pygame.K_RETURN:
+            item = self.get_selected_item()
+            if item == "New Game":
+                return MenuAction.NEW_GAME
+            elif item == "High Scores":
+                return MenuAction.HIGHSCORES
+            elif item == "About":
+                return MenuAction.ABOUT
+            elif item == "Quit":
+                return MenuAction.QUIT
+
+        return None
+
     def render(self, screen):
-        screen_w = screen.get_width()
-        screen_h = screen.get_height()
-        text_imgs = [
-            self.font.render(
-                text,
-                True,
-                self.select_color if i == self.selected_idx else self.color,
-            )
+        texts_and_colors = [
+            (text, self.select_color if i == self.selected_idx else self.color)
             for (i, text) in enumerate(self.items)
         ]
-        padding = int(screen_h * 0.05)
-        total_text_height = sum(img.get_height() for img in text_imgs)
-        total_padding = (len(text_imgs) - 1) * padding
-
-        menu_height = total_text_height + total_padding
-
-        y = (screen_h - menu_height) / 2
-
-        for text_img in text_imgs:
-            x = (screen_w - text_img.get_width()) / 2
-            screen.blit(text_img, (x, y))
-            y += padding + text_img.get_height()
+        render_centered_text_lines(screen, self.font, texts_and_colors)
